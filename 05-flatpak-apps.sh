@@ -48,22 +48,3 @@ fi
 
 
 
-if ask_confirmation "Install Obsidian (Flatpak)?"; then
-    echo "Installing Obsidian..."
-    echo "Note: This will install alongside the AUR version if you installed it."
-    flatpak install -y flathub md.obsidian.Obsidian
-else
-    echo "Skipping Obsidian Flatpak."
-fi
-
-
-
-if ask_confirmation "Install Brave Browser (Flatpak)?"; then
-    echo "Installing Brave Browser..."
-    echo "Note: This provides an alternative to the AUR version."
-    flatpak install -y flathub com.brave.Browser
-else
-    echo "Skipping Brave Browser Flatpak."
-fi
-
- 

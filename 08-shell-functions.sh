@@ -343,8 +343,10 @@ fi
 if [ -d "$HOME/.config/fish" ]; then
     mkdir -p "$HOME/.config/fish/functions"
     
-    # Create fish-compatible functions
-    cat > "$HOME/.config/fish/functions/compress.fish" << 'EOF'
+    # Create a comprehensive Fish functions file
+    cat > "$HOME/.config/fish/functions/cachos_functions.fish" << 'EOF'
+# CachyOS Shell Functions for Fish
+
 function compress
     if test (count $argv) -eq 0
         echo "Usage: compress <file.tar.gz> [files...]"
@@ -354,13 +356,16 @@ function compress
     set archive $argv[1]
     set files $argv[2..-1]
     
+    if test (count $files) -eq 0
+        echo "Error: No files to compress"
+        return 1
+    end
+    
     echo "Compressing files to $archive..."
     tar -czf $archive $files
     echo "✓ Compression complete"
 end
-EOF
 
-    cat > "$HOME/.config/fish/functions/decompress.fish" << 'EOF'
 function decompress
     if test (count $argv) -eq 0
         echo "Usage: decompress <archive>"
@@ -392,9 +397,223 @@ function decompress
     end
     echo "✓ Decompression complete"
 end
+
+function update-system
+    echo "Updating system packages..."
+    sudo pacman -Syu --noconfirm
+    echo "✓ System updated"
+end
+
+function update-aur
+    echo "Updating AUR packages..."
+    if command -q paru
+        paru -Sua --noconfirm
+    else if command -q yay
+        yay -Sua --noconfirm
+    else
+        echo "Error: No AUR helper found"
+        return 1
+    end
+    echo "✓ AUR packages updated"
+end
+
+function update-all
+    echo "Updating all packages..."
+    update-system
+    update-aur
+    echo "✓ All packages updated"
+end
+
+function dev-server
+    set port $argv[1]
+    if test -z "$port"
+        set port 3000
+    end
+    
+    echo "Starting development server on port $port..."
+    
+    if test -f "package.json"
+        npm run dev
+    else if test -f "Cargo.toml"
+        cargo run
+    else if test -f "go.mod"
+        go run .
+    else if test -f "main.py"
+        python main.py
+    else
+        echo "No recognized project files found"
+        return 1
+    end
+end
+
+function git-sync
+    echo "Syncing with remote repository..."
+    git fetch origin
+    git pull origin (git branch --show-current)
+    echo "✓ Repository synced"
+end
+
+function git-cleanup
+    echo "Cleaning up git repository..."
+    git prune
+    git gc
+    echo "✓ Git repository cleaned"
+end
+
+function docker-cleanup
+    echo "Cleaning up Docker..."
+    docker system prune -f
+    echo "✓ Docker cleaned up"
+end
+
+function up
+    set levels $argv[1]
+    if test -z "$levels"
+        set levels 1
+    end
+    
+    set path ""
+    for i in (seq 1 $levels)
+        set path "../$path"
+    end
+    cd $path
+end
+
+function ff
+    if command -q fzf
+        find . -type f | fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}'
+    else
+        echo "fzf not found. Install with: sudo pacman -S fzf"
+        return 1
+    end
+end
+
+function sysinfo
+    echo "System Information:"
+    echo "=================="
+    echo "OS: "(uname -o)
+    echo "Kernel: "(uname -r)
+    echo "Uptime: "(uptime -p)
+    echo "Memory: "(free -h | grep '^Mem:' | awk '{print $3 "/" $2}')
+    echo "Disk Usage: "(df -h / | tail -1 | awk '{print $3 "/" $2 " (" $5 ")"}')
+    echo "CPU: "(lscpu | grep 'Model name:' | cut -d':' -f2 | string trim)
+end
+
+function ports
+    echo "Active network connections:"
+    ss -tuln
+end
+
+function psg
+    if test (count $argv) -eq 0
+        echo "Usage: psg <process_name>"
+        return 1
+    end
+    ps aux | grep -v grep | grep $argv[1]
+end
+
+function reload-theme
+    echo "Reloading terminal theme..."
+    # Reload starship if it's running
+    if command -q starship
+        set -gx STARSHIP_CONFIG "$HOME/.config/starship/starship.toml"
+    end
+    
+    # Reload fish config
+    source ~/.config/fish/config.fish
+    
+    echo "✓ Theme reloaded"
+end
 EOF
 
-    echo "✓ Added Fish functions"
+    # Create Fish config additions
+    if [ ! -f "$HOME/.config/fish/config.fish" ]; then
+        touch "$HOME/.config/fish/config.fish"
+    fi
+    
+    if ! grep -q "CachyOS Shell Functions" "$HOME/.config/fish/config.fish"; then
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# CachyOS Shell Functions" >> "$HOME/.config/fish/config.fish"
+        echo "source ~/.config/fish/functions/cachos_functions.fish" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# CachyOS Aliases" >> "$HOME/.config/fish/config.fish"
+        echo "alias ll='eza -la --icons --git'" >> "$HOME/.config/fish/config.fish"
+        echo "alias lt='eza --tree --icons'" >> "$HOME/.config/fish/config.fish"
+        echo "alias la='eza -a --icons'" >> "$HOME/.config/fish/config.fish"
+        echo "alias ls='eza --icons'" >> "$HOME/.config/fish/config.fish"
+        echo "alias cat='bat --paging=never'" >> "$HOME/.config/fish/config.fish"
+        echo "alias grep='rg'" >> "$HOME/.config/fish/config.fish"
+        echo "alias find='fd'" >> "$HOME/.config/fish/config.fish"
+        echo "alias du='dust'" >> "$HOME/.config/fish/config.fish"
+        echo "alias df='duf'" >> "$HOME/.config/fish/config.fish"
+        echo "alias ps='procs'" >> "$HOME/.config/fish/config.fish"
+        echo "alias top='btop'" >> "$HOME/.config/fish/config.fish"
+        echo "alias htop='btop'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# Git aliases" >> "$HOME/.config/fish/config.fish"
+        echo "alias gs='git status'" >> "$HOME/.config/fish/config.fish"
+        echo "alias ga='git add'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gc='git commit'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gp='git push'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gl='git log --oneline'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gd='git diff'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gb='git branch'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gco='git checkout'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gm='git merge'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gf='git fetch'" >> "$HOME/.config/fish/config.fish"
+        echo "alias gg='gitui'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# System aliases" >> "$HOME/.config/fish/config.fish"
+        echo "alias ..='cd ..'" >> "$HOME/.config/fish/config.fish"
+        echo "alias ...='cd ../..'" >> "$HOME/.config/fish/config.fish"
+        echo "alias ....='cd ../../..'" >> "$HOME/.config/fish/config.fish"
+        echo "alias home='cd ~'" >> "$HOME/.config/fish/config.fish"
+        echo "alias root='cd /'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# Package management" >> "$HOME/.config/fish/config.fish"
+        echo "alias install='sudo pacman -S'" >> "$HOME/.config/fish/config.fish"
+        echo "alias remove='sudo pacman -R'" >> "$HOME/.config/fish/config.fish"
+        echo "alias search='pacman -Ss'" >> "$HOME/.config/fish/config.fish"
+        echo "alias update='sudo pacman -Syu'" >> "$HOME/.config/fish/config.fish"
+        echo "alias aur-install='paru -S'" >> "$HOME/.config/fish/config.fish"
+        echo "alias aur-search='paru -Ss'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# Network" >> "$HOME/.config/fish/config.fish"
+        echo "alias ping='ping -c 5'" >> "$HOME/.config/fish/config.fish"
+        echo "alias myip='curl -s ifconfig.me && echo'" >> "$HOME/.config/fish/config.fish"
+        echo "alias localip='ip route get 1.1.1.1 | grep -oP \"src \\K\\S+\"'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# File operations" >> "$HOME/.config/fish/config.fish"
+        echo "alias cp='cp -iv'" >> "$HOME/.config/fish/config.fish"
+        echo "alias mv='mv -iv'" >> "$HOME/.config/fish/config.fish"
+        echo "alias rm='rm -iv'" >> "$HOME/.config/fish/config.fish"
+        echo "alias mkdir='mkdir -pv'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# Docker shortcuts" >> "$HOME/.config/fish/config.fish"
+        echo "alias d='docker'" >> "$HOME/.config/fish/config.fish"
+        echo "alias dc='docker-compose'" >> "$HOME/.config/fish/config.fish"
+        echo "alias dps='docker ps'" >> "$HOME/.config/fish/config.fish"
+        echo "alias dimg='docker images'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# Development" >> "$HOME/.config/fish/config.fish"
+        echo "alias serve='python -m http.server'" >> "$HOME/.config/fish/config.fish"
+        echo "alias py='python'" >> "$HOME/.config/fish/config.fish"
+        echo "alias pip='python -m pip'" >> "$HOME/.config/fish/config.fish"
+        echo "alias venv='python -m venv'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# Editor shortcuts" >> "$HOME/.config/fish/config.fish"
+        echo "alias v='nvim'" >> "$HOME/.config/fish/config.fish"
+        echo "alias vim='nvim'" >> "$HOME/.config/fish/config.fish"
+        echo "alias nano='nvim'" >> "$HOME/.config/fish/config.fish"
+        echo "alias code='cursor'" >> "$HOME/.config/fish/config.fish"
+        echo "" >> "$HOME/.config/fish/config.fish"
+        echo "# System monitoring" >> "$HOME/.config/fish/config.fish"
+        echo "alias meminfo='free -m -l -t'" >> "$HOME/.config/fish/config.fish"
+        echo "alias cpuinfo='lscpu'" >> "$HOME/.config/fish/config.fish"
+        echo "alias diskinfo='df -h'" >> "$HOME/.config/fish/config.fish"
+    fi
+    
+    echo "✓ Added Fish functions and aliases"
 fi
 
 # Add to nushell config if it exists
@@ -441,5 +660,8 @@ echo "- cat (bat with syntax highlighting)"
 echo "- grep (ripgrep), find (fd)"
 echo "- top (btop), v (nvim), code (cursor)"
 echo ""
-echo "Restart your shell or run 'source ~/.bashrc' to activate!"
-EOF 
+if [ -d "$HOME/.config/fish" ]; then
+    echo "For Fish shell: Restart Fish or run 'source ~/.config/fish/config.fish'"
+else
+    echo "Restart your shell or run 'source ~/.bashrc' to activate!"
+fi

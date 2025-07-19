@@ -57,7 +57,6 @@ chmod +x *.sh 2>/dev/null || true
 echo ""
 echo "Installation will proceed in the following order:"
 echo "1. Essential tools (from official repos)"
-echo "2. AUR applications (requiring compilation)"
 echo "3. Binary applications (pre-compiled AUR packages)"
 echo "4. Special installations (Nix, Devbox, etc.)"
 echo "5. Flatpak applications (sandboxed apps)"
@@ -73,7 +72,6 @@ if ask_confirmation "Do you want to proceed with the installation?"; then
     
     # Run each script in order
     run_script "01-essential-tools.sh" "Installing Essential Development Tools"
-    run_script "02-aur-applications.sh" "Installing AUR Applications (Compilation)"
     run_script "03-binary-applications.sh" "Installing Binary Applications"
     run_script "04-special-installations.sh" "Running Special Installations"
     run_script "05-flatpak-apps.sh" "Installing Flatpak Applications"
